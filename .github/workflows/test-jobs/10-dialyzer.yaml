@@ -1,34 +1,35 @@
   # vim:sw=2:et:
-  eunit:
+  dialyzer:
+    name: dialyzer
     needs: [checks]
-    # https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#contexts
-    name: eunit
     runs-on: ubuntu-18.04
     steps:
       - name: CHECKOUT REPOSITORY
+        if: success() && '$(ERLANG_VERSION_IS)' == 'latest'
         uses: actions/checkout@v2
       # https://github.com/marketplace/actions/setup-elixir
       - name: CONFIGURE OTP & ELIXIR
+        if: success() && '$(ERLANG_VERSION_IS)' == 'latest'
         uses: actions/setup-elixir@v1
         with:
           otp-version: $(ERLANG_VERSION)
           # https://github.com/elixir-lang/elixir/releases
           elixir-version: $(ELIXIR_VERSION)
       - name: DOWNLOAD DEPS ARCHIVE
+        if: success() && '$(ERLANG_VERSION_IS)' == 'latest'
         uses: actions/download-artifact@v2
         with:
           name: deps.tar.xz
       - name: UNPACK DEPS ARCHIVE
+        if: success() && '$(ERLANG_VERSION_IS)' == 'latest'
         run: |
           tar Jxf deps.tar.xz
           rm deps.tar.xz
-      - name: RUN TESTS
+      - name: RUN DIALYZER
+        if: success() && '$(ERLANG_VERSION_IS)' == 'latest'
         run: |
-          ! test -d ebin || touch ebin/*
           branch_or_tag_name=${GITHUB_REF#refs/*/}
-          make eunit \
+          make dialyze \
             base_rmq_ref=$(base_rmq_ref) \
             current_rmq_ref=$branch_or_tag_name \
-            FULL= \
-            FAIL_FAST=1 \
-            SKIP_AS_ERROR=1
+            FULL=
