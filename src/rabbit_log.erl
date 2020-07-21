@@ -1,22 +1,13 @@
-%% The contents of this file are subject to the Mozilla Public License
-%% Version 1.1 (the "License"); you may not use this file except in
-%% compliance with the License. You may obtain a copy of the License
-%% at https://www.mozilla.org/MPL/
+%% This Source Code Form is subject to the terms of the Mozilla Public
+%% License, v. 2.0. If a copy of the MPL was not distributed with this
+%% file, You can obtain one at https://mozilla.org/MPL/2.0/.
 %%
-%% Software distributed under the License is distributed on an "AS IS"
-%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-%% the License for the specific language governing rights and
-%% limitations under the License.
-%%
-%% The Original Code is RabbitMQ.
-%%
-%% The Initial Developer of the Original Code is GoPivotal, Inc.
 %% Copyright (c) 2007-2020 VMware, Inc. or its affiliates.  All rights reserved.
 %%
 
 -module(rabbit_log).
 
--export([log/3, log/4]).
+-export([log/2, log/3, log/4]).
 -export([debug/1, debug/2, debug/3,
          info/1, info/2, info/3,
          notice/1, notice/2, notice/3,
@@ -83,6 +74,32 @@ log(Category, Level, Fmt, Args) when is_list(Args) ->
         _       -> make_internal_sink_name(Category)
     end,
     lager:log(Sink, Level, self(), Fmt, Args).
+
+%% logger(3) handler.
+log(#{level := Level,
+      msg := Msg,
+      meta := #{pid := Pid}} = _LogEvent,
+    _Config) ->
+    case Msg of
+        {report, #{label := {error_logger, _}}} ->
+            %% Avoid recursive loop.
+            ok;
+        {report, #{label := {application_controller, progress}}} ->
+            %% Already logged by Lager.
+            ok;
+        {report, #{label := {supervisor, progress}}} ->
+            %% Already logged by Lager.
+            ok;
+        {report, #{report := Report}} ->
+            %% FIXME: Is this code reached?
+            error_logger:info_report(Report);
+        {report, #{format := Format, args := Args}} when is_list(Format) ->
+            lager:log(?LAGER_SINK, Level, Pid, Format, Args);
+        {string, String} ->
+            lager:log(?LAGER_SINK, Level, Pid, "~ts", [String]);
+        {Format, Args} when is_list(Format) ->
+            lager:log(?LAGER_SINK, Level, Pid, Format, Args)
+    end.
 
 make_internal_sink_name(channel)    -> rabbit_log_channel_lager_event;
 make_internal_sink_name(connection) -> rabbit_log_connection_lager_event;

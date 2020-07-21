@@ -1,16 +1,7 @@
-%% The contents of this file are subject to the Mozilla Public License
-%% Version 1.1 (the "License"); you may not use this file except in
-%% compliance with the License. You may obtain a copy of the License at
-%% https://www.mozilla.org/MPL/
+%% This Source Code Form is subject to the terms of the Mozilla Public
+%% License, v. 2.0. If a copy of the MPL was not distributed with this
+%% file, You can obtain one at https://mozilla.org/MPL/2.0/.
 %%
-%% Software distributed under the License is distributed on an "AS IS"
-%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
-%% License for the specific language governing rights and limitations
-%% under the License.
-%%
-%% The Original Code is RabbitMQ.
-%%
-%% The Initial Developer of the Original Code is GoPivotal, Inc.
 %% Copyright (c) 2019-2020 VMware, Inc. or its affiliates.  All rights reserved.
 %%
 
@@ -1737,9 +1728,12 @@ var_is_used("HOME") ->
 var_is_used(Var) ->
     lists:member("RABBITMQ_" ++ Var, ?USED_ENV_VARS).
 
-var_is_set("RABBITMQ_" ++ Var = PrefixedVar) ->
-    os:getenv(PrefixedVar) /= false orelse
-    os:getenv(Var) /= false;
+%% The $RABBITMQ_* variables have precedence over their un-prefixed equivalent.
+%% Therefore, when we check if $RABBITMQ_* is set, we only look at this
+%% variable. However, when we check if an un-prefixed variable is set, we first
+%% look at its $RABBITMQ_* variant.
+var_is_set("RABBITMQ_" ++ _ = PrefixedVar) ->
+    os:getenv(PrefixedVar) /= false;
 var_is_set(Var) ->
     os:getenv("RABBITMQ_" ++ Var) /= false orelse
     os:getenv(Var) /= false.

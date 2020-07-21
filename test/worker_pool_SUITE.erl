@@ -1,16 +1,7 @@
-%% The contents of this file are subject to the Mozilla Public License
-%% Version 1.1 (the "License"); you may not use this file except in
-%% compliance with the License. You may obtain a copy of the License
-%% at https://www.mozilla.org/MPL/
+%% This Source Code Form is subject to the terms of the Mozilla Public
+%% License, v. 2.0. If a copy of the MPL was not distributed with this
+%% file, You can obtain one at https://mozilla.org/MPL/2.0/.
 %%
-%% Software distributed under the License is distributed on an "AS IS"
-%% basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
-%% the License for the specific language governing rights and
-%% limitations under the License.
-%%
-%% The Original Code is RabbitMQ.
-%%
-%% The Initial Developer of the Original Code is GoPivotal, Inc.
 %% Copyright (c) 2007-2020 VMware, Inc. or its affiliates.  All rights reserved.
 %%
 
@@ -206,13 +197,12 @@ dispatch_async_blocks_until_task_begins(_) ->
                          none
                  end,
     ?assert(is_process_alive(SomeWorker), "Dispatched tasks should be running"),
-    Pid = spawn(
-            fun() ->
-                    ok = worker_pool:dispatch_sync(?POOL_NAME,
-                                                   Waiter),
-                    Self ! done_waiting,
-                    exit(normal)
-            end),
+    spawn(fun() ->
+            ok = worker_pool:dispatch_sync(?POOL_NAME,
+                                           Waiter),
+            Self ! done_waiting,
+            exit(normal)
+          end),
     DidWait = receive
                   done_waiting ->
                       false
